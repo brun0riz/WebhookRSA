@@ -1,3 +1,4 @@
+import time
 from flask import Flask, json, request, jsonify, render_template
 from RSA.rsa import encript_message, decript_message
 from config import Config
@@ -17,7 +18,6 @@ def string_para_inteiro(texto):
 def inteiro_para_string(numero):
     print("Número:", numero)
     if numero == 0:
-        # Se 0 puder representar b'\x00' e não uma string vazia (pois string vazia daria erro na conversão para int)
         return '\x00' 
     tamanho = (numero.bit_length() + 7) // 8
     return numero.to_bytes(tamanho, byteorder='big').decode('utf-8', errors='replace')
@@ -33,12 +33,13 @@ def send_message_to_a():
 
     if message:
         print(f"Mensagem recebida para enviar a A: {message}")
-        # Convertendo a mensagem para inteiro
         message_int = string_para_inteiro(message)
         print(f"Mensagem convertida para inteiro: {message_int}")
         encrypted_message = encript_message(message_int, Config.SERVER1_PUBLIC_EXPOENT, Config.SERVER1_PUBLIC_MODULE)
 
-        messages_b_to_a.append(message)
+        timestamp = time.time()
+
+        messages_b_to_a.append({'text': message, 'timestamp': timestamp})
 
         try:
             headers = {'Content-Type': 'application/json'}
@@ -54,20 +55,25 @@ def send_message_to_a():
 
 @app_b.route('/receive_from_a', methods=['POST'])
 def receive_message_from_a():
+
     data = request.get_json()
     message = data.get('message')
     sender = data.get('sender')
 
     if message and sender == 'A':
-
         print(f"Mensagem recebida de A: {message}")
-        decrypted_message_int = decript_message(Config.SERVER_PRIVATE_EXPOENT, Config.SERVER_MODULE, message)
-        # Convertendo o número inteiro de volta para string
-        decrypted_message = inteiro_para_string(decrypted_message_int)
-        messages_received_from_a.append(decrypted_message)
-        print(f"Servidor B recebeu de A: {decrypted_message}")
-        return jsonify({'status': 'Mensagem recebida com sucesso!'}), 200
 
+        decrypted_message_int = decript_message(Config.SERVER_PRIVATE_EXPOENT, Config.SERVER_MODULE, message)
+
+        print(f"Número (descriptografado): {decrypted_message_int}")
+        decrypted_message = inteiro_para_string(decrypted_message_int)
+
+        timestamp = time.time()
+
+        messages_received_from_a.append({'text': decrypted_message, 'timestamp': timestamp})
+        
+        print(f"Servidor B recebeu de A (string final): {decrypted_message}")
+        return jsonify({'status': 'Mensagem recebida com sucesso!'}), 200
     return jsonify({'error': 'Mensagem inválida ou remetente incorreto'}), 400
 
 @app_b.route('/messages_a', methods=['GET'])
@@ -79,4 +85,4 @@ def get_sent_messages_to_a():
     return jsonify({'messages': messages_b_to_a}), 200
 
 if __name__ == '__main__':
-    app_b.run(port=5001, debug=True)
+    app_b.run(host='0.0.0.0', port=5001, debug=True)

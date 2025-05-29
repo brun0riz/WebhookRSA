@@ -16,7 +16,7 @@ def choose_e(phi, n):
 
 def calculate_d(e, phi):
     return pow(e, -1, phi)
-
+    
 def generate_keys():
     # generate two distinct prime numbers
     # recive the prime numbers

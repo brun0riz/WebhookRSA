@@ -2,6 +2,7 @@ from flask import Flask, json, request, jsonify, render_template
 from RSA.rsa import encript_message, decript_message
 from config import Config
 import requests
+import time
 
 app_a = Flask(__name__)
 APP_B_URL = "http://127.0.0.1:5001/receive_from_a"
@@ -16,7 +17,6 @@ def string_para_inteiro(texto):
 def inteiro_para_string(numero):
     print("Número:", numero)
     if numero == 0:
-        # Se 0 puder representar b'\x00' e não uma string vazia (pois string vazia daria erro na conversão para int)
         return '\x00' 
     tamanho = (numero.bit_length() + 7) // 8
     return numero.to_bytes(tamanho, byteorder='big').decode('utf-8', errors='replace')
@@ -31,22 +31,26 @@ def send_message_to_b():
     message = data.get('message')
 
     if message:
-        print(f"Mensagem recebida para enviar a B: {message}")
-        # Convertendo a mensagem para inteiro
+        print(f"Servidor A - Mensagem STRING recebida para enviar a B: {message}")
         message_int = string_para_inteiro(message)
+        print(f"Servidor A - Mensagem convertida para INTEIRO: {message_int}")
 
-        print(f"Mensagem convertida para inteiro: {message_int}")
         encrypted_message = encript_message(message_int, Config.SERVER2_PUBLIC_EXPOENT, Config.SERVER2_PUBLIC_MODULE)
+        print(f"Servidor A - Mensagem CRIPTOGRAFADA (enviada para B): {encrypted_message}")
 
-        messages_a_to_b.append(message)
+        timestamp = time.time()
+
+        messages_a_to_b.append({'text': message, 'timestamp': timestamp})
         try:
             headers = {'Content-Type': 'application/json'}
             payload = {'message': encrypted_message, 'sender': 'A'}
             response = requests.post(APP_B_URL, headers=headers, data=json.dumps(payload))
             response.raise_for_status()
+
             return jsonify({'status': 'Mensagem enviada para B com sucesso!'}), 200
         except requests.exceptions.RequestException as e:
             return jsonify({'error': f'Erro ao enviar mensagem para B: {e}'}), 500
+        
     return jsonify({'error': 'Mensagem não encontrada no corpo da requisição'}), 400
 
 @app_a.route('/receive_from_b', methods=['POST'])
@@ -58,10 +62,14 @@ def receive_message_from_b():
     if message and sender == 'B':
         print(f"Mensagem recebida de B: {message}")
         decrypted_message_int = decript_message(Config.SERVER_PRIVATE_EXPOENT, Config.SERVER_MODULE, message)
-        # Convertendo o número inteiro de volta para string
+
         decrypted_message = inteiro_para_string(decrypted_message_int)
-        messages_received_from_b.append(decrypted_message)
+
+        timestamp = time.time()
+        
+        messages_received_from_b.append({'text': decrypted_message, 'timestamp': timestamp})
         print(f"Servidor A recebeu de B: {decrypted_message}")
+
         return jsonify({'status': 'Mensagem recebida com sucesso!'}), 200
     return jsonify({'error': 'Mensagem inválida ou remetente incorreto'}), 400
 
@@ -74,4 +82,4 @@ def get_sent_messages_to_b():
     return jsonify({'messages': messages_a_to_b}), 200
 
 if __name__ == '__main__':
-    app_a.run(port=5000, debug=True)
+    app_a.run(host='0.0.0.0', port=5000, debug=True)
