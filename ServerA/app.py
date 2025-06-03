@@ -35,7 +35,7 @@ def send_message_to_b():
         message_int = string_para_inteiro(message)
         print(f"Servidor A - Mensagem convertida para INTEIRO: {message_int}")
 
-        encrypted_message = encript_message(message_int, Config.SERVER2_PUBLIC_EXPOENT, Config.SERVER2_PUBLIC_MODULE)
+        encrypted_message = encript_message(message_int, Config.SERVER_B_PUBLIC_EXPOENT, Config.SERVER_B_PUBLIC_MODULE)
         print(f"Servidor A - Mensagem CRIPTOGRAFADA (enviada para B): {encrypted_message}")
 
         timestamp = time.time()

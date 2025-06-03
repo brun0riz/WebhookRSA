@@ -35,7 +35,7 @@ def send_message_to_a():
         print(f"Mensagem recebida para enviar a A: {message}")
         message_int = string_para_inteiro(message)
         print(f"Mensagem convertida para inteiro: {message_int}")
-        encrypted_message = encript_message(message_int, Config.SERVER1_PUBLIC_EXPOENT, Config.SERVER1_PUBLIC_MODULE)
+        encrypted_message = encript_message(message_int, Config.SERVER_A_PUBLIC_EXPOENT, Config.SERVER_A_PUBLIC_MODULE)
 
         timestamp = time.time()
 
