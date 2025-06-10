@@ -15,7 +15,6 @@
             align-items: center;
             height: 100vh;
         }
-
         .chat-container {
             background-color: #fff;
             border-radius: 12px;
@@ -28,13 +27,11 @@
             height: 80vh;
             max-height: 700px;
         }
-
         h2 {
             text-align: center;
-            color: #004080;
+            color: #004080; /* Azul para Servidor A */
             margin-top: 0;
         }
-
         #chat-messages {
             flex-grow: 1;
             overflow-y: auto;
@@ -45,7 +42,6 @@
             margin-bottom: 15px;
             scroll-behavior: smooth;
         }
-
         .message {
             padding: 8px 12px;
             margin: 8px 4px;
@@ -56,18 +52,16 @@
             opacity: 0;
             animation-fill-mode: forwards;
         }
-
         .message.sent {
-            background-color: #004080;
+            background-color: #004080; /* Azul para Servidor A */
             color: white;
             margin-left: auto;
             text-align: right;
             clear: both; 
             float: right; 
         }
-
         .message.received {
-            background-color: #e6f0ff;
+            background-color: #e6f0ff; /* Cor de recebido correspondente */
             color: #333;
             margin-right: auto;
             text-align: left;
@@ -78,13 +72,11 @@
             clear: both;
             height: 0;
         }
-
         form {
             display: flex;
             gap: 10px;
             margin-top: 10px;
         }
-
         input[type="text"] {
             flex: 1;
             padding: 10px;
@@ -93,13 +85,11 @@
             outline: none;
             transition: border 0.2s;
         }
-
         input[type="text"]:focus {
-            border-color: #004080;
+            border-color: #004080; /* Azul para Servidor A */
         }
-
         button {
-            background-color: #004080;
+            background-color: #004080; /* Azul para Servidor A */
             color: white;
             border: none;
             padding: 10px 18px;
@@ -107,33 +97,22 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         button:hover {
-            background-color: #003366;
+            background-color: #003366; /* Azul mais escuro */
         }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Custom scroll */
-        #chat-messages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #chat-messages::-webkit-scrollbar-thumb {
-            background-color: #00408088;
-            border-radius: 10px;
-        }
+        #chat-messages::-webkit-scrollbar { width: 8px; }
+        #chat-messages::-webkit-scrollbar-thumb { background-color: #00408088; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <h2>Servidor A</h2>
-        <div id="chat-messages"></div>
+        <h2>Servidor {{ servidor }}</h2> <div id="chat-messages"></div>
         <form id="chat-form">
-            <input type="text" id="message-input" placeholder="Digite sua mensagem..." required />
+            <input type="text" id="message-input" placeholder="Digite sua mensagem..." autocomplete="off" required />
             <button type="submit">Enviar</button>
         </form>
     </div>
@@ -142,8 +121,7 @@
         const chatMessagesDiv = document.getElementById('chat-messages');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
-
-        const displayedMessageElements = new Map();
+        const displayedMessageElements = new Map(); // Para evitar duplicatas
 
         function createMessageId(msg) {
             const textSnippet = typeof msg.text === 'string' ? msg.text.substring(0, 20).replace(/\s+/g, '_') : 'notext';
@@ -151,6 +129,8 @@
         }
 
         function addMessageToDisplay(messageText, type, messageId) {
+            if (displayedMessageElements.has(messageId)) return; // Já exibida
+
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', type);
             messageDiv.innerText = messageText;
@@ -164,55 +144,36 @@
             
             displayedMessageElements.set(messageId, messageDiv);
             
-            setTimeout(() => {
-                messageDiv.style.opacity = '1'; 
-            }, 10);
-
+            setTimeout(() => { messageDiv.style.opacity = '1'; }, 10);
             chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
         }
 
         async function fetchMessages() {
             try {
+                // Endpoints para o Servidor A
                 const sentResponse = await fetch('/messages_sent_b');
                 const receivedResponse = await fetch('/messages_b');
 
                 if (!sentResponse.ok || !receivedResponse.ok) {
                     console.error("Erro na resposta da rede ao buscar mensagens.");
-                    if (!sentResponse.ok) console.error("Erro ao buscar /messages_sent_b:", sentResponse.status, await sentResponse.text());
-                    if (!receivedResponse.ok) console.error("Erro ao buscar /messages_b:", receivedResponse.status, await receivedResponse.text());
                     return;
                 }
 
                 const sentData = await sentResponse.json();
                 const receivedData = await receivedResponse.json();
-
                 let allMessages = [];
 
                 if (sentData && sentData.messages) {
-                    sentData.messages.forEach(msg => {
-                        allMessages.push({ 
-                            text: msg.text, 
-                            timestamp: msg.timestamp, 
-                            type: 'sent'
-                        });
-                    });
+                    sentData.messages.forEach(msg => allMessages.push({ ...msg, type: 'sent' }));
                 }
-
                 if (receivedData && receivedData.messages) {
-                    receivedData.messages.forEach(msg => {
-                        allMessages.push({ 
-                            text: msg.text, 
-                            timestamp: msg.timestamp, 
-                            type: 'received'
-                        });
-                    });
+                    receivedData.messages.forEach(msg => allMessages.push({ ...msg, type: 'received' }));
                 }
                 
                 allMessages = allMessages.map(msg => ({ ...msg, id: createMessageId(msg) }));
                 allMessages.sort((a, b) => a.timestamp - b.timestamp);
 
                 let newMessagesAdded = false;
-
                 allMessages.forEach(msg => {
                     if (!displayedMessageElements.has(msg.id)) {
                         addMessageToDisplay(msg.text, msg.type, msg.id);
@@ -221,11 +182,8 @@
                 });
                 
                 if (newMessagesAdded) {
-                    setTimeout(() => {
-                        chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
-                    }, 50); 
+                    setTimeout(() => { chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; }, 50); 
                 }
-
             } catch (error) {
                 console.error('Erro ao buscar mensagens:', error);
             }
@@ -234,31 +192,38 @@
         chatForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const messageText = messageInput.value.trim();
-            if (!messageText) return;
+            // Permitir envio de mensagem vazia se o backend for tratar
+            // if (!messageText && messageText !== "") return; 
+             if (messageInput.value.length === 0 && messageText.length === 0) { // Não envia se só tiver espaços
+                // ou se o campo original estiver completamente vazio.
+                // Se você quiser permitir o envio de uma string que se torna vazia após trim(), ajuste aqui.
+                messageInput.value = ''; // Limpa espaços
+                return;
+            }
+
 
             try {
+                // Endpoint para o Servidor A enviar para B
                 const response = await fetch('/send_to_b', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: messageText })
+                    body: JSON.stringify({ message: messageText }) // Envia o texto original
                 });
-
                 const data = await response.json();
-
                 if (response.ok) {
                     messageInput.value = ''; 
                     fetchMessages(); 
                 } else {
-                    alert('Erro ao enviar mensagem: ' + (data.error || 'Erro desconhecido do servidor.'));
+                    alert('Erro ao enviar mensagem: ' + (data.error || 'Erro desconhecido.'));
                 }
             } catch (error) {
-                console.error('Erro de conexão com o servidor:', error);
+                console.error('Erro de conexão:', error);
                 alert('Erro de conexão com o servidor.');
             }
         });
 
         window.onload = fetchMessages;
-        setInterval(fetchMessages, 3000);
+        setInterval(fetchMessages, 3000); // Atualiza a cada 3 segundos
     </script>
 </body>
 </html>
