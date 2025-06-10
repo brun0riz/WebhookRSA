@@ -6,7 +6,7 @@ import requests
 import time
 import threading
 import logging
-from dotenv import load_dotenv # Para carregar o .env explicitamente
+from dotenv import load_dotenv 
 
 load_dotenv() # Carrega ServerA/.env
 
@@ -126,10 +126,6 @@ def send_message_to_other_server():
     message_text = data.get('message')
     if not message_text: # Lida com mensagens vazias enviadas pelo cliente
         logger.info("Recebida tentativa de enviar mensagem vazia.")
-        # Pode-se optar por enviar a string vazia criptografada ou retornar erro.
-        # Se for enviar, a conversão para int e criptografia devem lidar com isso.
-        # Para este exemplo, vamos permitir enviar string vazia.
-        # message_text = "" # ou return jsonify({'error': 'Mensagem não pode ser vazia'}), 400
 
     logger.info(f"Mensagem STRING recebida para enviar a B: '{message_text}'")
     message_int = string_para_inteiro(message_text)

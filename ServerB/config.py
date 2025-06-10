@@ -1,8 +1,4 @@
-# ServerA/config.py (e ServerB/config.py)
 import os
-# Opcional: se você quiser ter certeza de que o .env é carregado ao instanciar AppConfig
-# from dotenv import load_dotenv
-# load_dotenv() # Carrega o .env do diretório atual do script em execução
 
 class AppConfig:
     def __init__(self, server_id):
